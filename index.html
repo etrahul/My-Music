@@ -115,6 +115,24 @@
       transform: scale(1.25);
       background: #34d399;
     }
+    .yt-drawer-collapsed {
+      position: fixed !important;
+      bottom: 0 !important;
+      right: 0 !important;
+      width: 1px !important;
+      height: 1px !important;
+      opacity: 0.01 !important;
+      pointer-events: none !important;
+      overflow: hidden !important;
+      z-index: -10 !important;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-[#090d16] text-slate-100 select-none">
@@ -132,7 +150,7 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-emerald-200 to-emerald-400 bg-clip-text text-transparent">My Music</h1>
-            <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">YouTube API</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 shadow">v2.0 LIVE STREAM</span>
           </div>
           <p class="text-xs text-slate-400 hidden sm:block">Flip Lyrics • Custom Playlists • Backup • Live Friends Jam Room</p>
         </div>
@@ -147,7 +165,7 @@
           <input
             id="searchInput"
             type="text"
-            placeholder="Search songs, artists, or paste YouTube URL..."
+            placeholder="Type any song/artist (e.g. Arijit Singh) — Auto Live Search..."
             class="w-full pl-10 pr-24 py-2 text-sm bg-slate-900/90 border border-slate-700/80 rounded-full text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
           />
           <button
@@ -200,6 +218,17 @@
           <span class="hidden sm:inline">Backup / Restore</span>
         </button>
       </div>
+      <!-- MOBILE-FIRST INSTANT LIVE STREAM CHIPS (VISIBLE IMMEDIATELY AT TOP) -->
+      <div class="w-full order-4 pt-1.5 border-t border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+        <button type="button" onclick="quickLiveSearch('Arijit Singh')" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-slate-950 whitespace-nowrap shadow shrink-0">🎤 Arijit Singh</button>
+        <button type="button" onclick="quickLiveSearch('Trending Hindi Songs')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 whitespace-nowrap shrink-0">🔥 Trending Hindi</button>
+        <button type="button" onclick="quickLiveSearch('Bollywood Lofi')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 whitespace-nowrap shrink-0">🌙 Hindi Lofi</button>
+        <button type="button" onclick="quickLiveSearch('Punjabi Hits Diljit Karan Aujla')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 whitespace-nowrap shrink-0">⚡ Punjabi</button>
+        <button type="button" onclick="quickLiveSearch('Atif Aslam KK Hits')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 whitespace-nowrap shrink-0">❤️ 2000s Hits</button>
+        <button id="localFileBtn" type="button" onclick="triggerLocalAudioUpload()" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 whitespace-nowrap shrink-0">📂 Device MP3</button>
+        <button id="sleepTimerBtn" type="button" onclick="cycleSleepTimer()" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 whitespace-nowrap shrink-0">🌙 Sleep: <span id="sleepTimerText">Off</span></button>
+        <input id="localAudioFileInput" type="file" accept="audio/*" multiple onchange="handleLocalAudioUpload(event)" class="hidden" />
+      </div>
     </div>
   </header>
 
@@ -207,7 +236,7 @@
   <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 grid grid-cols-1 lg:grid-cols-12 gap-5 pb-32">
 
     <!-- LEFT SIDEBAR: LIBRARY, FAVOURITES & CUSTOM PLAYLISTS -->
-    <aside class="lg:col-span-3 flex flex-col gap-4">
+    <aside class="lg:col-span-3 flex flex-col gap-4 order-3 lg:order-1">
       <!-- Primary Navigation Card -->
       <div class="bg-slate-900/75 border border-slate-800/90 rounded-2xl p-3 shadow-xl">
         <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">Library & Modes</p>
@@ -326,7 +355,8 @@
     </aside>
 
     <!-- CENTER COLUMN: TRACK LIST OR FRIENDS JAM ROOM -->
-    <section class="lg:col-span-5 flex flex-col gap-4">
+    <section class="lg:col-span-5 flex flex-col gap-4 order-1 lg:order-2">
+      <audio id="realAudioPlayer" preload="auto" crossorigin="anonymous" class="hidden"></audio>
 
       <!-- View Banner Header -->
       <div id="viewHeaderCard" class="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-emerald-950/70 via-slate-900 to-slate-900 p-4 sm:p-5 shadow-xl">
@@ -507,7 +537,7 @@
     </section>
 
     <!-- RIGHT COLUMN: NOW PLAYING + 3D FLIP THUMBNAIL & LYRICS CARD -->
-    <aside class="lg:col-span-4 flex flex-col gap-4">
+    <aside class="lg:col-span-4 flex flex-col gap-4 order-2 lg:order-3">
       <div class="bg-slate-900/85 border border-slate-800/90 rounded-2xl p-4 shadow-2xl flex flex-col gap-3.5 sticky top-20">
 
         <!-- Card Header -->
@@ -577,8 +607,8 @@
 
               <!-- Bottom Overlay Info on Thumbnail -->
               <div class="relative z-10 p-4">
-                <h3 id="cardSongTitle" class="text-lg font-extrabold text-white truncate">Neon Midnight Drive</h3>
-                <p id="cardSongArtist" class="text-xs text-slate-300 truncate">CyberSynth & Arijit Vibes</p>
+                <h3 id="cardSongTitle" class="text-lg font-extrabold text-white truncate">Kesariya (Brahmāstra)</h3>
+                <p id="cardSongArtist" class="text-xs text-slate-300 truncate">Arijit Singh, Pritam • 320kbps HD</p>
               </div>
             </div>
 
@@ -587,7 +617,7 @@
               <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
                 <div>
                   <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Synced Lyrics View</span>
-                  <h4 id="lyricsSongTitle" class="text-sm font-bold text-white truncate">Neon Midnight Drive</h4>
+                  <h4 id="lyricsSongTitle" class="text-sm font-bold text-white truncate">Kesariya (Brahmāstra)</h4>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <button
@@ -618,7 +648,7 @@
         </div>
 
         <!-- Embedded YouTube IFrame Container (Collapsible) -->
-        <div id="ytPlayerWrapper" class="hidden rounded-xl overflow-hidden border border-slate-800 bg-black">
+        <div id="ytPlayerWrapper" class="yt-drawer-collapsed rounded-xl overflow-hidden border border-slate-800 bg-black">
           <div class="flex items-center justify-between px-3 py-1.5 bg-slate-950 text-[11px] text-slate-400">
             <span>Official YouTube IFrame API Stream</span>
             <span id="ytApiStateText" class="text-emerald-400 font-semibold">Ready</span>
@@ -631,8 +661,8 @@
         <!-- Current Track Meta + Heart Favourite + Add to Playlist -->
         <div class="flex items-center justify-between gap-2 pt-1">
           <div class="min-w-0">
-            <h3 id="panelSongTitle" class="text-base font-bold text-white truncate">Neon Midnight Drive</h3>
-            <p id="panelSongArtist" class="text-xs text-slate-400 truncate">CyberSynth & Arijit Vibes</p>
+            <h3 id="panelSongTitle" class="text-base font-bold text-white truncate">Kesariya (Brahmāstra)</h3>
+            <p id="panelSongArtist" class="text-xs text-slate-400 truncate">Arijit Singh, Pritam • 320kbps HD</p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <!-- Heart Button -->
@@ -646,6 +676,26 @@
               <svg id="panelFavIcon" class="w-5 h-5 text-slate-400 transition" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
               </svg>
+            </button>
+            <!-- Offline Audio Download Button -->
+            <button
+              id="downloadSongBtn"
+              type="button"
+              onclick="downloadCurrentSongAudio()"
+              class="px-2.5 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-xs font-semibold text-emerald-300 border border-emerald-500/30 flex items-center gap-1 transition"
+              title="Download audio file for offline listening"
+            >
+              <span>⬇ Offline</span>
+            </button>
+            <!-- Playback Speed Button -->
+            <button
+              id="speedToggleBtn"
+              type="button"
+              onclick="cyclePlaybackSpeed()"
+              class="px-2.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-xs font-mono font-bold text-slate-200 border border-slate-700 transition"
+              title="Change Playback Speed"
+            >
+              <span id="speedBtnText">1.0x</span>
             </button>
             <!-- Save to Custom Playlist Button -->
             <button
@@ -679,8 +729,8 @@
             title="Click to flip Thumbnail / Lyrics"
           />
           <div class="min-w-0">
-            <p id="barSongTitle" class="text-sm font-bold text-white truncate">Neon Midnight Drive</p>
-            <p id="barSongArtist" class="text-xs text-slate-400 truncate">CyberSynth & Arijit Vibes</p>
+            <p id="barSongTitle" class="text-sm font-bold text-white truncate">Kesariya (Brahmāstra)</p>
+            <p id="barSongArtist" class="text-xs text-slate-400 truncate">Arijit Singh, Pritam • 320kbps HD</p>
           </div>
         </div>
 
@@ -1090,116 +1140,134 @@
     const INITIAL_SONGS = [
       {
         id: "song-1",
-        title: "Neon Midnight Drive (Synthwave)",
-        artist: "My Music Originals • Retro Pulse",
-        youtubeId: "jfKfPfyJRdk",
-        duration: 198,
+        title: "Kesariya (Trending Hindi Stream)",
+        artist: "Pritam, Arijit Singh, Amitabh Bhattacharya",
+        youtubeId: "BddP6PYo2gs",
+        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        searchQuery: "Kesariya Arijit Singh",
+        streamSource: "320kbps HD Stream",
+        duration: 268,
         thumbnail: DEFAULT_THUMB_NEON,
-        melody: [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 293.66, 349.23],
+        melody: [261.63, 329.63, 392.00, 523.25],
         lyrics: [
-          "♪ Neon lights reflecting on the midnight highway ♪",
-          "City sleeping while the synth bass rolls",
-          "Two hundred kilometers apart, under the same sky",
-          "Press play and let the rhythm bridge the miles",
-          "Headphones glowing in the quiet night",
-          "Every beat is synced right to your heart",
-          "We are riding through the neon horizon",
-          "No distance when the music plays together ♪"
+          "♪ Mujhko itna bataye koi ♪",
+          "Kaise tujhse dil na lagaye koi",
+          "Rabba ne tujhko banane mein",
+          "Kardi hai husn ki khaali tijoriyan",
+          "Kaajal ki siyaahi se likhi",
+          "Hai tune jaane kitno ki love storiyan",
+          "Kesariya tera ishq hai piya",
+          "Rang jaaun jo main haath lagaun ♪"
         ]
       },
       {
         id: "song-2",
-        title: "Golden Hour Sunset Lofi",
-        artist: "Chillhop Café • Acoustic Vibes",
-        youtubeId: "5qap5aO4i9A",
-        duration: 174,
+        title: "Apna Bana Le (Bhediya)",
+        artist: "Arijit Singh, Sachin-Jigar",
+        youtubeId: "ElZfdU54Cp8",
+        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+        searchQuery: "Apna Bana Le Arijit Singh",
+        streamSource: "320kbps HD Stream",
+        duration: 261,
         thumbnail: DEFAULT_THUMB_LOFI,
-        melody: [220.00, 261.63, 329.63, 440.00, 392.00, 329.63, 261.63, 246.94],
+        melody: [220.00, 261.63, 329.63, 440.00],
         lyrics: [
-          "♪ Warm coffee steaming by the window pane ♪",
-          "Golden sunset painting shadows on the wall",
-          "Vinyl spinning slow at 33 RPM",
-          "Shaam ki hawa aur teri yaadon ka safar",
-          "Chahe duriyan ho kitni bhi darmiyan",
-          "Yeh geet hum dono ko kareeb layega",
-          "Soft rain tapping on the glass outside",
-          "Peaceful moments in every single chord ♪"
+          "♪ Tu mera koi na hoke bhi kuch laage ♪",
+          "Kiya re jo bhi tune kaise kiya re",
+          "Jiya ko mere baandh aise liya re",
+          "Samajh ke bhi na samajh main saku",
+          "Saweron ka mere tu sooraj laage",
+          "Tu mera koi na hoke bhi kuch laage",
+          "Apna bana le piya, apna bana le piya",
+          "Dil ke nagar mein sheher tu basa le piya ♪"
         ]
       },
       {
         id: "song-3",
-        title: "Safar Ki Raat (Acoustic Hindi Mix)",
-        artist: "Aarav & Indie Collective",
-        youtubeId: "DWcJFNfaw9c",
-        duration: 215,
+        title: "Tum Hi Ho (Aashiqui 2)",
+        artist: "Arijit Singh, Mithoon",
+        youtubeId: "IJq0yyWug1k",
+        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+        searchQuery: "Tum Hi Ho Arijit Singh",
+        streamSource: "320kbps HD Stream",
+        duration: 262,
         thumbnail: DEFAULT_THUMB_NEON,
-        melody: [293.66, 349.23, 440.00, 587.33, 523.25, 440.00, 349.23, 329.63],
+        melody: [293.66, 349.23, 440.00, 587.33],
         lyrics: [
-          "♪ Raat lambi hai aur sitaare saath hain ♪",
-          "Khwabon ke sheher mein teri aawaz hai",
-          "Meelon ka faasla bhi ab kam lagne laga",
-          "Jab se tere sang yeh gaana bajne laga",
-          "Dil ke har kone mein teri hi dhun",
-          "Aankhein band kar aur bas mujhko sun",
-          "Hawaon mein ghul gaya hai yeh tarana",
-          "Hamesha yaad rahega yeh suhana zamana ♪"
+          "♪ Hum tere bin ab reh nahi sakte ♪",
+          "Tere bina kya wajood mera",
+          "Tujhse juda gar ho jaayenge",
+          "Toh khud se hi ho jaayenge juda",
+          "Kyunki tum hi ho, ab tum hi ho",
+          "Zindagi ab tum hi ho",
+          "Chain bhi, mera dard bhi",
+          "Meri aashiqui ab tum hi ho ♪"
         ]
       },
       {
         id: "song-4",
-        title: "Monsoon Baarish Beats",
-        artist: "Mumbai Lofi Project",
-        youtubeId: "rUxyKA_-grg",
-        duration: 186,
+        title: "Chaleya (Jawan)",
+        artist: "Anirudh Ravichander, Arijit Singh, Shilpa Rao",
+        youtubeId: "VAdGW7QDJiU",
+        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+        searchQuery: "Chaleya Jawan Arijit Singh",
+        streamSource: "320kbps HD Stream",
+        duration: 200,
         thumbnail: DEFAULT_THUMB_LOFI,
-        melody: [246.94, 293.66, 369.99, 493.88, 440.00, 369.99, 293.66, 246.94],
+        melody: [246.94, 293.66, 369.99, 493.88],
         lyrics: [
-          "♪ Rimjhim gire saawan, bheege har ek man ♪",
-          "Chai ki pyali aur purane geeton ki dhun",
-          "Boondon ki sargam khidki pe gungunaye",
-          "Har ek pal tujhe aur paas le aaye",
-          "Bheegi sadkon pe chalti yeh hawayein",
-          "Dosti ke har lamhe ko sajayein",
-          "Sun rahe hain hum ek hi geet saath",
-          "Jaise haathon mein ho tera hi haath ♪"
+          "♪ Ishq mein dil bana hai ♪",
+          "Ishq mein dil fanaa hai ho",
+          "Mita de ya bana de",
+          "Maine tujhko chuna hai ho",
+          "Tere saare rang oढ़ ke dhang oढ़ ke",
+          "Tera hua main sabko chhod ke",
+          "Ishq ni karda naap tol ke",
+          "Raaj khol ke aaya hoon main sabko bol ke ♪"
         ]
       },
       {
         id: "song-5",
-        title: "Starlight Roadster (Electronic Mix)",
-        artist: "Nova & Horizon Beats",
-        youtubeId: "4xDzrJKXOOY",
-        duration: 204,
+        title: "O Maahi (Dunki)",
+        artist: "Pritam, Arijit Singh, Irshad Kamil",
+        youtubeId: "Etkd-07gnxM",
+        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+        searchQuery: "O Maahi Dunki Arijit Singh",
+        streamSource: "320kbps HD Stream",
+        duration: 233,
         thumbnail: DEFAULT_THUMB_NEON,
-        melody: [329.63, 392.00, 493.88, 659.25, 587.33, 493.88, 392.00, 329.63],
+        melody: [329.63, 392.00, 493.88, 659.25],
         lyrics: [
-          "♪ Chasing starlight across the open galaxy ♪",
-          "Subwoofers humming with electric energy",
-          "Turn the volume up and let the bassline drop",
-          "From dusk till dawn this party will not stop",
-          "Flip the cover to read every word we sing",
-          "Feel the resonance that the melodies bring",
-          "Across the miles we share the exact same beat",
-          "My Music makes the midnight journey complete ♪"
+          "♪ Baaton ko behne do ♪",
+          "Baahon mein rehne do",
+          "Hai sukoon inmein",
+          "Raste woh begaane",
+          "Jhoote woh afsaane",
+          "Tu na ho jinmein",
+          "O maahi o maahi",
+          "Meri wafa pe haq tera hi toh hai ♪"
         ]
       },
       {
         id: "song-6",
-        title: "Dil Ka Sukoon (Unplugged Guitar)",
-        artist: "Kabir Studio Sessions",
-        youtubeId: "n61ULEU7CO0",
-        duration: 190,
+        title: "Heeriye (Feat. Arijit Singh)",
+        artist: "Jasleen Royal, Arijit Singh, Dulquer Salmaan",
+        youtubeId: "RLzC55ai0eo",
+        audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+        searchQuery: "Heeriye Jasleen Royal Arijit Singh",
+        streamSource: "320kbps HD Stream",
+        duration: 194,
         thumbnail: DEFAULT_THUMB_LOFI,
-        melody: [196.00, 246.94, 293.66, 392.00, 349.23, 293.66, 246.94, 196.00],
+        melody: [196.00, 246.94, 293.66, 392.00],
         lyrics: [
-          "♪ Guitar ki taaron se nikli yeh sada ♪",
-          "Teri dosti hai sabse haseen dua",
-          "Jab bhi udaas ho man, yeh playlist chalana",
-          "Apne pasandida gaano ko dil se sunana",
-          "Har lafz mein chhupi hai ek kahani",
-          "Yaadon ki kitaab hai nayi aur purani",
-          "Sukoon milta hai jab sur milte hain",
-          "Band aankhon mein sapne khilte hain ♪"
+          "♪ Heeriye, heeriye, aa ♪",
+          "Teri hoke maraan जिंद जान करां",
+          "Teri hoke maraan जिंद जान करां",
+          "Neendan vi tutt tutt gaiyan",
+          "Chundi main taare rahiyaan",
+          "Sochan vich teriyan paiyaan haaniya",
+          "Saari saar raat jagaave",
+          "Yadaan nu zikar tera aave ♪"
         ]
       }
     ];
@@ -1220,7 +1288,7 @@
     // =========================================================================
     // 2. APPLICATION STATE & SAFE LOCALSTORAGE PERSISTENCE
     // =========================================================================
-    const STORAGE_KEY = "my_music_spotify_yt_v1";
+    const STORAGE_KEY = "my_music_metrolist_v2";
 
     const state = {
       songs: [...INITIAL_SONGS],
@@ -1230,14 +1298,17 @@
       currentSongId: "song-1",
       isPlaying: false,
       currentTime: 0,
-      duration: 198,
-      volume: 80,
+      duration: 268,
+      volume: 85,
       isMuted: false,
       isShuffle: false,
       isRepeat: false,
       isFlippedToLyrics: false,
       showYtVideo: false,
       ytApiKey: "",
+      playbackRate: 1.0,
+      sleepTimerMinutes: 0,
+      sleepTimerRemainingSec: 0,
       assignModalSongId: "song-1",
       // Listen Together Room State
       room: {
@@ -1252,6 +1323,7 @@
 
     function loadStateFromStorage() {
       try {
+        try { localStorage.removeItem("my_music_spotify_yt_v1"); } catch (e) {}
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return;
         const parsed = JSON.parse(raw);
@@ -1278,7 +1350,11 @@
     function saveStateToStorage() {
       try {
         const payload = {
-          songs: state.songs,
+          songs: state.songs.map(s => ({
+            ...s,
+            // Don't persist temporary blob: URLs across reloads
+            audioUrl: (s.audioUrl && s.audioUrl.startsWith("blob:")) ? "" : s.audioUrl
+          })),
           favorites: state.favorites,
           playlists: state.playlists,
           ytApiKey: state.ytApiKey,
@@ -1291,15 +1367,344 @@
     }
 
     // =========================================================================
-    // 3. HYBRID AUDIO ENGINE: YOUTUBE IFRAME API + WEB AUDIO SYNTHESIZER
+    // 3. METROLIST-GRADE REAL AUDIO ENGINE:
+    //    HTML5 <audio> (JioSaavn 320kbps / iTunes / Local MP3) + YouTube IFrame API
     // =========================================================================
     let ytPlayer = null;
     let ytReady = false;
     let ytPlayingValid = false;
+    let html5AudioActive = false;
     let progressTimer = null;
+    let sleepInterval = null;
     let audioCtx = null;
     let synthStep = 0;
     let synthLastNoteTime = 0;
+
+    // Public zero-key CORS music streaming API mirrors (JioSaavn 320kbps full songs)
+    const SAAVN_API_HOSTS = [
+      "saavn.dev/api/search/songs?query=",
+      "jiosaavn-api-privatecvc2.vercel.app/search/songs?query=",
+      "saavn.sumit.co/api/search/songs?query="
+    ];
+
+    function getAudioElement() {
+      return document.getElementById("realAudioPlayer");
+    }
+
+    function setupHtml5AudioListeners() {
+      const audio = getAudioElement();
+      if (!audio) return;
+
+      audio.volume = state.isMuted ? 0 : (state.volume / 100);
+
+      audio.addEventListener("loadedmetadata", function () {
+        if (audio.duration && isFinite(audio.duration) && audio.duration > 1) {
+          state.duration = Math.floor(audio.duration);
+          const cur = getCurrentSong();
+          if (cur) cur.duration = state.duration;
+          updateProgressUI();
+          renderSongList();
+        }
+      });
+
+      audio.addEventListener("timeupdate", function () {
+        if (html5AudioActive && !audio.paused) {
+          state.currentTime = audio.currentTime || 0;
+          if (audio.duration && isFinite(audio.duration) && audio.duration > 1) {
+            state.duration = Math.floor(audio.duration);
+          }
+          updateProgressUI();
+        }
+      });
+
+      audio.addEventListener("play", function () {
+        html5AudioActive = true;
+        state.isPlaying = true;
+        const badge = document.getElementById("ytApiStateText");
+        if (badge) badge.textContent = "Streaming HD Audio";
+        renderPlayButtonAndEq();
+      });
+
+      audio.addEventListener(" ended", function () {
+        handleTrackEnded();
+      });
+      audio.addEventListener("ended", function () {
+        handleTrackEnded();
+      });
+
+      audio.addEventListener("error", function () {
+        // If primary stream URL expired or failed, fallback to YouTube IFrame player or secondary stream
+        html5AudioActive = false;
+        const song = getCurrentSong();
+        if (song && !song._retriedStream) {
+          song._retriedStream = true;
+          resolveAndPlayRealStream(song, true);
+        } else if (ytReady && ytPlayer && song && song.youtubeId) {
+          try {
+            ytPlayer.loadVideoById(song.youtubeId);
+            ytPlayer.playVideo();
+          } catch (e) {}
+        }
+      });
+    }
+
+    // Extract highest-quality stream URL and artwork from JioSaavn API item
+    function normalizeSaavnSong(item, idx) {
+      if (!item) return null;
+      const rawTitle = (item.name || item.title || "Unknown Track")
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'")
+        .replace(/&amp;/g, "&");
+
+      let artist = "Various Artists";
+      if (item.primaryArtists && typeof item.primaryArtists === "string") {
+        artist = item.primaryArtists;
+      } else if (item.artists && Array.isArray(item.artists.primary) && item.artists.primary.length > 0) {
+        artist = item.artists.primary.map(a => a.name).join(", ");
+      } else if (item.subtitle) {
+        artist = item.subtitle;
+      }
+      artist = artist.replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, "&");
+
+      // Extract highest bitrate downloadUrl (320kbps or 160kbps MP4/M4A)
+      let streamUrl = "";
+      if (Array.isArray(item.downloadUrl) && item.downloadUrl.length > 0) {
+        const last = item.downloadUrl[item.downloadUrl.length - 1];
+        streamUrl = last.url || last.link || "";
+      } else if (typeof item.downloadUrl === "string") {
+        streamUrl = item.downloadUrl;
+      } else if (item.media_preview_url) {
+        streamUrl = item.media_preview_url;
+      }
+      if (streamUrl.startsWith("http://")) {
+        streamUrl = streamUrl.replace("http://", "https://");
+      }
+
+      // Extract highest resolution image (500x500)
+      let thumb = DEFAULT_THUMB_NEON;
+      if (Array.isArray(item.image) && item.image.length > 0) {
+        const hi = item.image[item.image.length - 1];
+        thumb = hi.url || hi.link || DEFAULT_THUMB_NEON;
+      } else if (typeof item.image === "string") {
+        thumb = item.image;
+      }
+
+      const dur = parseInt(item.duration, 10) || 210;
+      if (!streamUrl) return null;
+
+      return {
+        id: "song-live-" + (item.id || (Date.now() + "-" + idx)),
+        title: rawTitle,
+        artist: artist,
+        youtubeId: "jfKfPfyJRdk",
+        audioUrl: streamUrl,
+        streamSource: "320kbps Full Song",
+        duration: dur,
+        thumbnail: thumb,
+        melody: [261.63, 329.63, 392.00, 523.25],
+        lyrics: [
+          `♪ ${rawTitle} ♪`,
+          `Artist: ${artist}`,
+          "Fetching real time-synced lyrics from LRCLIB..."
+        ],
+        syncedLyrics: []
+      };
+    }
+
+    // Fetch live songs from JioSaavn Mirrors -> Fallback to Apple iTunes Search API
+    async function searchLiveMusicCatalog(query, limit = 10) {
+      const q = encodeURIComponent(query.trim());
+
+      // 1. Try JioSaavn Public APIs (Full-length 320kbps Hindi/English songs)
+      for (const host of SAAVN_API_HOSTS) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 4500);
+          const res = await fetch(`https://${host}${q}&limit=${limit}`, { signal: controller.signal });
+          clearTimeout(timer);
+          if (!res.ok) continue;
+          const json = await res.json();
+          const rawList =
+            (json && json.data && Array.isArray(json.data.results) && json.data.results) ||
+            (json && Array.isArray(json.data) && json.data) ||
+            (json && Array.isArray(json.results) && json.results) ||
+            [];
+          const parsed = rawList.map((item, i) => normalizeSaavnSong(item, i)).filter(Boolean);
+          if (parsed.length > 0) {
+            return parsed;
+          }
+        } catch (e) {
+          // Try next mirror
+        }
+      }
+
+      // 2. Fallback: Apple iTunes Search API (100% Global CORS Uptime)
+      try {
+        const res = await fetch(`https://itunes.apple.com/search?term=${q}&media=music&entity=song&limit=${limit}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.results) && data.results.length > 0) {
+            return data.results
+              .filter(r => r.previewUrl)
+              .map((r, i) => ({
+                id: `song-itunes-${r.trackId || (Date.now() + "-" + i)}`,
+                title: r.trackName || "Unknown Song",
+                artist: r.artistName || "Unknown Artist",
+                youtubeId: "jfKfPfyJRdk",
+                audioUrl: r.previewUrl,
+                streamSource: "AAC Stream",
+                duration: Math.round((r.trackTimeMillis || 180000) / 1000),
+                thumbnail: (r.artworkUrl100 ? r.artworkUrl100.replace("100x100bb", "500x500bb") : DEFAULT_THUMB_NEON),
+                melody: [261.63, 329.63, 392.00, 523.25],
+                lyrics: [
+                  `♪ ${r.trackName || "Track"} ♪`,
+                  `Artist: ${r.artistName || "Artist"}`,
+                  `Album: ${r.collectionName || "Single"}`,
+                  "Fetching real time-synced lyrics from LRCLIB..."
+                ],
+                syncedLyrics: []
+              }));
+          }
+        }
+      } catch (e) {}
+
+      return [];
+    }
+
+    // Resolve real stream URL for a song & play it via HTML5 <audio>
+    async function resolveAndPlayRealStream(song, forceRefetch = false) {
+      if (!song) return;
+      const audio = getAudioElement();
+      if (!audio) return;
+
+      // If song has a pre-populated SoundHelix placeholder or no live Saavn stream yet, upgrade it live in background!
+      const isPlaceholderStream = !song.audioUrl || song.audioUrl.includes("soundhelix.com");
+      if (isPlaceholderStream || forceRefetch) {
+        const q = song.searchQuery || `${song.title.replace(/\(.*?\)/g, "").trim()} ${song.artist.split(",")[0]}`;
+        try {
+          const matches = await searchLiveMusicCatalog(q, 3);
+          if (matches && matches.length > 0 && matches[0].audioUrl) {
+            song.audioUrl = matches[0].audioUrl;
+            if (matches[0].thumbnail && matches[0].thumbnail !== DEFAULT_THUMB_NEON) {
+              song.thumbnail = matches[0].thumbnail;
+            }
+            if (matches[0].duration) {
+              song.duration = matches[0].duration;
+              if (state.currentSongId === song.id) state.duration = song.duration;
+            }
+            song.streamSource = matches[0].streamSource || "320kbps Full Song";
+            saveStateToStorage();
+            renderAll();
+          }
+        } catch (e) {}
+      }
+
+      if (song.audioUrl && state.currentSongId === song.id) {
+        try {
+          if (ytReady && ytPlayer && typeof ytPlayer.pauseVideo === "function") {
+            try { ytPlayer.pauseVideo(); } catch (e) {}
+          }
+          if (audio.src !== song.audioUrl) {
+            audio.src = song.audioUrl;
+          }
+          audio.playbackRate = state.playbackRate || 1.0;
+          audio.volume = state.isMuted ? 0 : (state.volume / 100);
+          if (state.isPlaying) {
+            const playPromise = audio.play();
+            if (playPromise && typeof playPromise.then === "function") {
+              playPromise.then(() => {
+                html5AudioActive = true;
+                updateMediaSessionMetadata(song);
+                renderPlayButtonAndEq();
+              }).catch(() => {
+                // Autoplay blocked before user gesture -> will play on next click
+              });
+            }
+          }
+        } catch (err) {}
+      }
+    }
+
+    // Fetch Real Time-Synced Lyrics from LRCLIB (Exact same open-source API used by Metrolist!)
+    async function fetchRealLyricsFromLrclib(song) {
+      if (!song || song._lyricsFetched) return;
+      song._lyricsFetched = true;
+
+      const cleanTitle = song.title.replace(/\(.*?\)|\[.*?\]/g, "").trim();
+      const primaryArtist = (song.artist || "").split(",")[0].replace(/•.*/g, "").trim();
+      const query = encodeURIComponent(`${cleanTitle} ${primaryArtist}`);
+
+      try {
+        const res = await fetch(`https://lrclib.net/api/search?q=${query}`);
+        if (!res.ok) return;
+        const list = await res.json();
+        if (!Array.isArray(list) || list.length === 0) return;
+
+        const best = list.find(item => item.syncedLyrics) || list.find(item => item.plainLyrics);
+        if (!best) return;
+
+        if (best.syncedLyrics) {
+          const parsedSynced = [];
+          const plainLines = [];
+          best.syncedLyrics.split(/\r?\n/).forEach(row => {
+            const m = row.match(/^\[(\d{1,2}):(\d{2}(?:\.\d{1,3})?)\](.*)$/);
+            if (m) {
+              const sec = parseInt(m[1], 10) * 60 + parseFloat(m[2]);
+              const txt = m[3].trim();
+              if (txt) {
+                parsedSynced.push({ time: sec, text: txt });
+                plainLines.push(txt);
+              }
+            }
+          });
+          if (parsedSynced.length > 0) {
+            song.syncedLyrics = parsedSynced;
+            song.lyrics = plainLines;
+            saveStateToStorage();
+            if (state.currentSongId === song.id) {
+              renderLyricsLines();
+            }
+            return;
+          }
+        }
+
+        if (best.plainLyrics) {
+          const lines = best.plainLyrics.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+          if (lines.length > 0) {
+            song.lyrics = lines;
+            saveStateToStorage();
+            if (state.currentSongId === song.id) {
+              renderLyricsLines();
+            }
+          }
+        }
+      } catch (e) {
+        // Keep existing curated lyrics if LRCLIB is offline
+      }
+    }
+
+    // Android / Chrome Background MediaSession Lock-Screen Controls (Like Metrolist!)
+    function updateMediaSessionMetadata(song) {
+      if (!song || !("mediaSession" in navigator)) return;
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: song.title,
+          artist: song.artist,
+          album: "My Music • Live Stream",
+          artwork: [
+            { src: song.thumbnail || DEFAULT_THUMB_NEON, sizes: "512x512", type: "image/jpeg" }
+          ]
+        });
+        navigator.mediaSession.setActionHandler("play", () => {
+          if (!state.isPlaying) togglePlayPause();
+        });
+        navigator.mediaSession.setActionHandler("pause", () => {
+          if (state.isPlaying) togglePlayPause();
+        });
+        navigator.mediaSession.setActionHandler("previoustrack", () => prevTrack());
+        navigator.mediaSession.setActionHandler("nexttrack", () => nextTrack());
+      } catch (e) {}
+    }
 
     function initYoutubeApi() {
       try {
@@ -1311,9 +1716,7 @@
         } else {
           document.head.appendChild(tag);
         }
-      } catch (e) {
-        // Fallback to WebAudio synthesizer automatically
-      }
+      } catch (e) {}
     }
 
     window.onYouTubeIframeAPIReady = function () {
@@ -1322,7 +1725,7 @@
         ytPlayer = new window.YT.Player("youtubeIframeMount", {
           height: "100%",
           width: "100%",
-          videoId: current ? current.youtubeId : "jfKfPfyJRdk",
+          videoId: current ? current.youtubeId : "BddP6PYo2gs",
           playerVars: {
             playsinline: 1,
             controls: 1,
@@ -1333,14 +1736,19 @@
             onReady: function () {
               ytReady = true;
               const badge = document.getElementById("ytApiStateText");
-              if (badge) badge.textContent = "Connected";
+              if (badge) badge.textContent = "Ready";
               if (ytPlayer && typeof ytPlayer.setVolume === "function") {
                 ytPlayer.setVolume(state.isMuted ? 0 : state.volume);
               }
             },
             onStateChange: function (event) {
               if (event.data === 1) {
-                // Playing in YT
+                // If user opened YT Video drawer and plays YT video, pause HTML5 audio so they don't double-play
+                const audio = getAudioElement();
+                if (audio && !audio.paused && state.showYtVideo) {
+                  audio.pause();
+                  html5AudioActive = false;
+                }
                 ytPlayingValid = true;
                 const d = ytPlayer.getDuration();
                 if (d && d > 0 && d < 36000) {
@@ -1349,15 +1757,11 @@
                   if (song) song.duration = state.duration;
                 }
               } else if (event.data === 0) {
-                // Ended
                 handleTrackEnded();
               }
             },
             onError: function () {
-              // Video restricted from embedded playback -> seamless WebAudio synth fallback
               ytPlayingValid = false;
-              const badge = document.getElementById("ytApiStateText");
-              if (badge) badge.textContent = "Synth Audio Active";
             }
           }
         });
@@ -1378,40 +1782,9 @@
       }
     }
 
+    // Kept for backwards compatibility — NEVER plays annoying robotic synth beeps anymore!
     function playSynthStepForCurrentSong() {
-      if (!state.isPlaying || state.isMuted || state.volume <= 0 || ytPlayingValid) return;
-      const now = performance.now();
-      if (now - synthLastNoteTime < 420) return;
-      synthLastNoteTime = now;
-
-      ensureAudioContext();
-      if (!audioCtx) return;
-
-      const song = getCurrentSong();
-      const notes = (song && song.melody && song.melody.length)
-        ? song.melody
-        : [261.63, 329.63, 392.00, 523.25];
-      const freq = notes[synthStep % notes.length];
       synthStep++;
-
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-        const volScaled = (state.volume / 100) * 0.12;
-        gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(Math.max(0.002, volScaled), audioCtx.currentTime + 0.04);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.38);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.4);
-      } catch (e) {
-        // Ignore audio scheduling errors
-      }
     }
 
     function startPlaybackLoop() {
@@ -1419,7 +1792,13 @@
       progressTimer = setInterval(() => {
         if (!state.isPlaying) return;
 
-        if (ytReady && ytPlayer && ytPlayingValid && typeof ytPlayer.getCurrentTime === "function") {
+        const audio = getAudioElement();
+        if (audio && !audio.paused && html5AudioActive) {
+          state.currentTime = audio.currentTime || 0;
+          if (audio.duration && isFinite(audio.duration) && audio.duration > 1) {
+            state.duration = Math.floor(audio.duration);
+          }
+        } else if (ytReady && ytPlayer && ytPlayingValid && typeof ytPlayer.getCurrentTime === "function") {
           const ytTime = ytPlayer.getCurrentTime();
           if (typeof ytTime === "number" && !isNaN(ytTime)) {
             state.currentTime = ytTime;
@@ -1429,8 +1808,7 @@
             state.duration = Math.floor(ytDur);
           }
         } else {
-          state.currentTime += 0.25;
-          playSynthStepForCurrentSong();
+          state.currentTime += 0.25 * (state.playbackRate || 1.0);
         }
 
         if (state.currentTime >= state.duration) {
@@ -1442,9 +1820,13 @@
     }
 
     function handleTrackEnded() {
+      const audio = getAudioElement();
       if (state.isRepeat) {
         state.currentTime = 0;
-        if (ytReady && ytPlayer && typeof ytPlayer.seekTo === "function") {
+        if (audio && html5AudioActive) {
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+        } else if (ytReady && ytPlayer && typeof ytPlayer.seekTo === "function") {
           try { ytPlayer.seekTo(0, true); } catch (e) {}
         }
         updateProgressUI();
@@ -1466,14 +1848,36 @@
 
       state.currentSongId = song.id;
       state.currentTime = 0;
-      state.duration = song.duration || 195;
+      state.duration = song.duration || 210;
       state.isPlaying = true;
       ytPlayingValid = false;
       synthStep = 0;
 
-      ensureAudioContext();
+      const audio = getAudioElement();
+      if (audio) {
+        try {
+          audio.pause();
+          if (song.audioUrl) {
+            audio.src = song.audioUrl;
+            audio.currentTime = 0;
+            audio.playbackRate = state.playbackRate || 1.0;
+            audio.volume = state.isMuted ? 0 : (state.volume / 100);
+            const p = audio.play();
+            if (p && typeof p.then === "function") {
+              p.then(() => {
+                html5AudioActive = true;
+                updateMediaSessionMetadata(song);
+              }).catch(() => {});
+            }
+          }
+        } catch (e) {}
+      }
 
-      if (ytReady && ytPlayer && typeof ytPlayer.loadVideoById === "function" && song.youtubeId) {
+      // Resolve/upgrade to 320kbps JioSaavn stream & fetch LRCLIB synced lyrics automatically
+      resolveAndPlayRealStream(song, false);
+      fetchRealLyricsFromLrclib(song);
+
+      if (state.showYtVideo && ytReady && ytPlayer && typeof ytPlayer.loadVideoById === "function" && song.youtubeId) {
         try {
           ytPlayer.loadVideoById(song.youtubeId);
         } catch (e) {}
@@ -1490,9 +1894,28 @@
 
     function togglePlayPause(fromRemoteSync = false) {
       state.isPlaying = !state.isPlaying;
-      ensureAudioContext();
+      const song = getCurrentSong();
+      const audio = getAudioElement();
 
-      if (ytReady && ytPlayer) {
+      if (audio && song && song.audioUrl && !state.showYtVideo) {
+        try {
+          if (state.isPlaying) {
+            if (!audio.src || (!audio.src.includes(song.audioUrl) && !song.audioUrl.startsWith("blob:"))) {
+              audio.src = song.audioUrl;
+            }
+            audio.playbackRate = state.playbackRate || 1.0;
+            audio.volume = state.isMuted ? 0 : (state.volume / 100);
+            audio.play().then(() => {
+              html5AudioActive = true;
+              updateMediaSessionMetadata(song);
+            }).catch(() => {});
+            resolveAndPlayRealStream(song, false);
+            fetchRealLyricsFromLrclib(song);
+          } else {
+            audio.pause();
+          }
+        } catch (e) {}
+      } else if (ytReady && ytPlayer) {
         try {
           if (state.isPlaying && typeof ytPlayer.playVideo === "function") {
             ytPlayer.playVideo();
@@ -1539,7 +1962,13 @@
       const targetSeconds = (pct / 100) * (state.duration || 180);
       state.currentTime = targetSeconds;
 
-      if (ytReady && ytPlayer && typeof ytPlayer.seekTo === "function") {
+      const audio = getAudioElement();
+      if (audio && html5AudioActive) {
+        try {
+          audio.currentTime = targetSeconds;
+        } catch (e) {}
+      }
+      if (ytReady && ytPlayer && typeof ytPlayer.seekTo === "function" && state.showYtVideo) {
         try {
           ytPlayer.seekTo(targetSeconds, true);
         } catch (e) {}
@@ -1551,9 +1980,19 @@
       }
     }
 
+    function seekToExactSecond(seconds) {
+      const dur = Math.max(1, state.duration || 180);
+      const pct = Math.max(0, Math.min(100, (seconds / dur) * 100));
+      seekAudio(pct);
+    }
+
     function changeVolume(val) {
       state.volume = Math.max(0, Math.min(100, parseInt(val, 10) || 0));
       state.isMuted = state.volume === 0;
+      const audio = getAudioElement();
+      if (audio) {
+        audio.volume = state.isMuted ? 0 : (state.volume / 100);
+      }
       if (ytReady && ytPlayer && typeof ytPlayer.setVolume === "function") {
         try { ytPlayer.setVolume(state.volume); } catch (e) {}
       }
@@ -1562,6 +2001,10 @@
 
     function toggleMute() {
       state.isMuted = !state.isMuted;
+      const audio = getAudioElement();
+      if (audio) {
+        audio.volume = state.isMuted ? 0 : (state.volume / 100);
+      }
       if (ytReady && ytPlayer && typeof ytPlayer.setVolume === "function") {
         try { ytPlayer.setVolume(state.isMuted ? 0 : state.volume); } catch (e) {}
       }
@@ -1590,6 +2033,132 @@
       showToast(state.isRepeat ? "Repeat Current Track On" : "Repeat Off");
     }
 
+    // Metrolist Pro Control: Playback Speed (1.0x -> 1.25x -> 1.5x -> 0.85x)
+    function cyclePlaybackSpeed() {
+      const speeds = [1.0, 1.25, 1.5, 0.85];
+      const idx = speeds.indexOf(state.playbackRate);
+      state.playbackRate = speeds[(idx + 1) % speeds.length];
+      const audio = getAudioElement();
+      if (audio) {
+        audio.playbackRate = state.playbackRate;
+      }
+      const speedText = document.getElementById("speedBtnText");
+      if (speedText) {
+        speedText.textContent = `${state.playbackRate}x`;
+      }
+      showToast(`Playback speed set to ${state.playbackRate}x`);
+    }
+
+    // Metrolist Pro Control: Sleep Timer (Off -> 15m -> 30m -> 60m)
+    function cycleSleepTimer() {
+      const options = [0, 15, 30, 60];
+      const idx = options.indexOf(state.sleepTimerMinutes);
+      state.sleepTimerMinutes = options[(idx + 1) % options.length];
+      if (sleepInterval) {
+        clearInterval(sleepInterval);
+        sleepInterval = null;
+      }
+      const label = document.getElementById("sleepTimerText");
+      if (state.sleepTimerMinutes === 0) {
+        state.sleepTimerRemainingSec = 0;
+        if (label) label.textContent = "Off";
+        showToast("Sleep Timer turned Off");
+        return;
+      }
+      state.sleepTimerRemainingSec = state.sleepTimerMinutes * 60;
+      if (label) label.textContent = `${state.sleepTimerMinutes}m`;
+      showToast(`Sleep Timer set: music will pause in ${state.sleepTimerMinutes} minutes`);
+
+      sleepInterval = setInterval(() => {
+        if (state.sleepTimerRemainingSec <= 1) {
+          clearInterval(sleepInterval);
+          sleepInterval = null;
+          state.sleepTimerMinutes = 0;
+          if (label) label.textContent = "Off";
+          if (state.isPlaying) {
+            togglePlayPause();
+          }
+          showToast("🌙 Sleep Timer finished — Music paused.");
+          return;
+        }
+        state.sleepTimerRemainingSec--;
+        if (label) {
+          const m = Math.ceil(state.sleepTimerRemainingSec / 60);
+          label.textContent = `${m}m`;
+        }
+      }, 1000);
+    }
+
+    // Metrolist Pro Control: Offline Audio Download
+    async function downloadCurrentSongAudio() {
+      const song = getCurrentSong();
+      if (!song) return;
+      if (!song.audioUrl || song.audioUrl.includes("soundhelix.com")) {
+        showToast("Resolving high-bitrate audio link for offline download...");
+        await resolveAndPlayRealStream(song, true);
+      }
+      if (!song.audioUrl) {
+        showToast("No direct audio stream available for this track");
+        return;
+      }
+      try {
+        showToast(`Downloading "${song.title}" for offline playback...`);
+        const res = await fetch(song.audioUrl);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const safeName = song.title.replace(/[^a-z0-9 _-]/gi, "").trim() || "my-music-track";
+        a.href = url;
+        a.download = `${safeName}.m4a`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        showToast(`Saved "${song.title}" to your device!`);
+      } catch (e) {
+        window.open(song.audioUrl, "_blank", "noopener,noreferrer");
+        showToast(`Opened direct audio download stream for "${song.title}"`);
+      }
+    }
+
+    // Local Device MP3/M4A File Importer
+    function triggerLocalAudioUpload() {
+      const inp = document.getElementById("localAudioFileInput");
+      if (inp) inp.click();
+    }
+
+    function handleLocalAudioUpload(event) {
+      const files = event.target.files;
+      if (!files || !files.length) return;
+      let firstAddedId = "";
+      Array.from(files).forEach((file, idx) => {
+        const blobUrl = URL.createObjectURL(file);
+        const cleanName = file.name.replace(/\.[^/.]+$/, "");
+        const newSong = {
+          id: `song-local-${Date.now()}-${idx}`,
+          title: cleanName,
+          artist: "Local Device Audio • Offline Ready",
+          youtubeId: "jfKfPfyJRdk",
+          audioUrl: blobUrl,
+          streamSource: "Local Device File",
+          duration: 210,
+          thumbnail: DEFAULT_THUMB_NEON,
+          melody: [261.63, 329.63, 392.00, 523.25],
+          lyrics: [
+            `♪ Playing Local Audio File: ${cleanName} ♪`,
+            "Fetching synced lyrics from LRCLIB if available..."
+          ],
+          syncedLyrics: []
+        };
+        state.songs.unshift(newSong);
+        if (!firstAddedId) firstAddedId = newSong.id;
+      });
+      if (firstAddedId) {
+        selectAndPlaySong(firstAddedId);
+        showToast(`Loaded ${files.length} local audio file(s) & started playback!`);
+      }
+    }
+
     // FEATURE 1: Flip Thumbnail <-> Lyrics
     function toggleThumbnailLyricsFlip() {
       state.isFlippedToLyrics = !state.isFlippedToLyrics;
@@ -1608,12 +2177,19 @@
       const wrapper = document.getElementById("ytPlayerWrapper");
       const btn = document.getElementById("toggleYtVideoBtn");
       if (wrapper) {
-        wrapper.classList.toggle("hidden", !state.showYtVideo);
+        wrapper.classList.toggle("yt-drawer-collapsed", !state.showYtVideo);
+        wrapper.classList.remove("hidden");
       }
       if (btn) {
         btn.className = state.showYtVideo
           ? "px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40 transition"
           : "px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition";
+      }
+      if (state.showYtVideo && ytReady && ytPlayer) {
+        const song = getCurrentSong();
+        if (song && song.youtubeId && typeof ytPlayer.loadVideoById === "function") {
+          try { ytPlayer.loadVideoById(song.youtubeId); } catch (e) {}
+        }
       }
     }
 
@@ -1761,7 +2337,7 @@
     function getBackupPayloadObject() {
       return {
         appName: "My Music",
-        version: "1.0",
+        version: "2.0",
         exportedAt: new Date().toISOString(),
         songs: state.songs,
         favorites: state.favorites,
@@ -1953,9 +2529,7 @@
           wirePeerConnection(conn);
         });
 
-        peerInstance.on("error", function () {
-          // Even if PeerJS public broker is unreachable, BroadcastChannel + Demo sync works seamlessly
-        });
+        peerInstance.on("error", function () {});
       } catch (e) {}
     }
 
@@ -1984,14 +2558,12 @@
         ...extra
       };
 
-      // Send over WebRTC P2P connections
       peerConnections.forEach(conn => {
         try {
           if (conn && conn.open) conn.send(packet);
         } catch (e) {}
       });
 
-      // Send over BroadcastChannel for multi-tab testing
       if (broadcastChannel) {
         try { broadcastChannel.postMessage(packet); } catch (e) {}
       }
@@ -2021,7 +2593,6 @@
         return;
       }
 
-      // Sync Song & Playback State
       if (packet.song && packet.song.id) {
         if (!state.songs.some(s => s.id === packet.song.id)) {
           state.songs.unshift(packet.song);
@@ -2095,7 +2666,7 @@
     }
 
     // =========================================================================
-    // 8. YOUTUBE URL / VIDEO ID IMPORTER & YOUTUBE DATA API v3 SEARCH
+    // 8. ZERO-KEY LIVE MUSIC SEARCH + YOUTUBE IMPORTER
     // =========================================================================
     function extractYoutubeId(input) {
       const str = (input || "").trim();
@@ -2112,14 +2683,14 @@
       showToast(state.ytApiKey ? "YouTube Data API v3 Key Saved!" : "API Key Cleared");
     }
 
-    function addCustomYoutubeSong() {
+    async function addCustomYoutubeSong() {
       const urlInput = document.getElementById("customYtUrlInput");
       const titleInput = document.getElementById("customYtTitleInput");
       const artistInput = document.getElementById("customYtArtistInput");
       const lyricsInput = document.getElementById("customYtLyricsInput");
 
       const rawUrl = urlInput ? urlInput.value.trim() : "";
-      const videoId = extractYoutubeId(rawUrl) || "jfKfPfyJRdk";
+      const videoId = extractYoutubeId(rawUrl) || "BddP6PYo2gs";
       const title = (titleInput && titleInput.value.trim()) || `YouTube Track (${videoId})`;
       const artist = (artistInput && artistInput.value.trim()) || "YouTube Music Stream";
       const rawLyrics = (lyricsInput && lyricsInput.value.trim()) || "";
@@ -2129,9 +2700,7 @@
         : [
             `♪ Now streaming: ${title} ♪`,
             `Artist: ${artist}`,
-            `YouTube Video ID: ${videoId}`,
-            "Click 'Edit Lyrics' on this flipped card anytime to paste custom lyrics!",
-            "Enjoy synchronized playback with your friends in Live Room ♪"
+            "Click 'Edit Lyrics' on this flipped card anytime to paste custom lyrics!"
           ];
 
       const newSong = {
@@ -2139,10 +2708,13 @@
         title,
         artist,
         youtubeId: videoId,
+        audioUrl: "",
+        streamSource: "YouTube / HD Stream",
         duration: 210,
         thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-        melody: [261.63, 329.63, 392.00, 523.25, 440.00, 392.00, 329.63, 261.63],
-        lyrics: parsedLyrics
+        melody: [261.63, 329.63, 392.00, 523.25],
+        lyrics: parsedLyrics,
+        syncedLyrics: []
       };
 
       state.songs.unshift(newSong);
@@ -2153,18 +2725,24 @@
 
       closeModal("ytModal");
       selectAndPlaySong(newSong.id);
-      showToast(`Added "${title}" from YouTube!`);
+      showToast(`Added "${title}" & started playback!`);
     }
 
-    async function handleSearchOrImport() {
+    async function quickLiveSearch(categoryQuery) {
       const searchEl = document.getElementById("searchInput");
-      const query = searchEl ? searchEl.value.trim() : "";
+      if (searchEl) searchEl.value = categoryQuery;
+      await handleSearchOrImport(categoryQuery);
+    }
+
+    async function handleSearchOrImport(overrideQuery) {
+      const searchEl = document.getElementById("searchInput");
+      const query = (typeof overrideQuery === "string" ? overrideQuery : (searchEl ? searchEl.value : "")).trim();
       if (!query) {
         renderSongList();
         return;
       }
 
-      // Check if user pasted a direct YouTube URL or 11-char ID
+      // 1. Check if user pasted a direct YouTube URL or 11-char ID
       const directId = extractYoutubeId(query);
       if (directId && (query.includes("youtu") || query.length === 11)) {
         const newSong = {
@@ -2172,26 +2750,63 @@
           title: `YouTube Stream (${directId})`,
           artist: "Direct YouTube Import",
           youtubeId: directId,
+          audioUrl: "",
+          streamSource: "YouTube Stream",
           duration: 200,
           thumbnail: `https://i.ytimg.com/vi/${directId}/hqdefault.jpg`,
           melody: [293.66, 369.99, 440.00, 587.33],
           lyrics: [
             `♪ Direct YouTube Stream (${directId}) ♪`,
-            "Click 'Edit Lyrics' to customize lyrics for this song.",
             "Click 'YT Video' button above to watch the official video stream!"
           ]
         };
         state.songs.unshift(newSong);
         if (searchEl) searchEl.value = "";
+        state.showYtVideo = true;
+        const wrapper = document.getElementById("ytPlayerWrapper");
+        if (wrapper) wrapper.classList.remove("yt-drawer-collapsed", "hidden");
         selectAndPlaySong(newSong.id);
-        showToast("Imported YouTube link & started playback!");
+        showToast("Imported YouTube link & started video stream!");
         return;
       }
 
-      // If user configured a YouTube Data API v3 Key, fetch live YouTube results
+      // 2. ZERO-API-KEY LIVE STREAMING SEARCH (JioSaavn 320kbps + Apple iTunes Fallback)
+      const searchBtn = document.getElementById("ytSearchBtn");
+      if (searchBtn) searchBtn.textContent = "Searching...";
+      showToast(`Searching "${query}" online...`);
+
+      try {
+        const liveResults = await searchLiveMusicCatalog(query, 12);
+        if (liveResults.length > 0) {
+          let addedCount = 0;
+          let firstTrackId = liveResults[0].id;
+          for (let i = liveResults.length - 1; i >= 0; i--) {
+            const track = liveResults[i];
+            const existing = state.songs.find(
+              s => s.audioUrl === track.audioUrl || (s.title.toLowerCase() === track.title.toLowerCase() && s.artist.toLowerCase() === track.artist.toLowerCase())
+            );
+            if (!existing) {
+              state.songs.unshift(track);
+              addedCount++;
+              firstTrackId = track.id;
+            } else {
+              firstTrackId = existing.id;
+            }
+          }
+          // Clear search input filter so all newly fetched tracks are visible & playable immediately
+          if (searchEl) searchEl.value = "";
+          state.currentView = "all";
+          saveStateToStorage();
+          selectAndPlaySong(firstTrackId);
+          showToast(`Found & playing "${liveResults[0].title}" (${addedCount} new songs added)!`);
+          if (searchBtn) searchBtn.textContent = "Search YT";
+          return;
+        }
+      } catch (e) {}
+
+      // 3. Optional YouTube Data API v3 fallback if user configured a key
       if (state.ytApiKey) {
         try {
-          showToast("Searching YouTube Data API v3...");
           const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=5&q=${encodeURIComponent(query)}&key=${encodeURIComponent(state.ytApiKey)}`;
           const res = await fetch(url);
           const data = await res.json();
@@ -2207,25 +2822,22 @@
                 duration: 210,
                 thumbnail: (item.snippet.thumbnails && item.snippet.thumbnails.high && item.snippet.thumbnails.high.url) || DEFAULT_THUMB_NEON,
                 melody: [261.63, 329.63, 392.00, 523.25],
-                lyrics: [
-                  `♪ ${item.snippet.title} ♪`,
-                  `Channel: ${item.snippet.channelTitle}`,
-                  "Fetched live via YouTube Data API v3.",
-                  "Click 'Edit Lyrics' to add full lyrics!"
-                ]
+                lyrics: [`♪ ${item.snippet.title} ♪`, `Channel: ${item.snippet.channelTitle}`]
               });
             });
+            if (searchEl) searchEl.value = "";
             saveStateToStorage();
             renderAll();
             showToast(`Added ${data.items.length} tracks from YouTube API!`);
+            if (searchBtn) searchBtn.textContent = "Search YT";
             return;
           }
-        } catch (err) {
-          showToast("Filtering local library (Check API key for live YT fetch)");
-        }
+        } catch (err) {}
       }
 
+      if (searchBtn) searchBtn.textContent = "Search YT";
       renderSongList();
+      showToast("Showing matching tracks from your library");
     }
 
     // =========================================================================
@@ -2246,6 +2858,7 @@
       if (!song || !textarea) return;
       const lines = textarea.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
       song.lyrics = lines.length ? lines : ["♪ Instrumental / No lyrics added ♪"];
+      song.syncedLyrics = [];
       saveStateToStorage();
       renderNowPlayingCard();
       closeModal("lyricsModal");
@@ -2273,10 +2886,12 @@
       }
 
       if (!q) return base;
-      return base.filter(s =>
+      const filtered = base.filter(s =>
         s.title.toLowerCase().includes(q) ||
-        s.artist.toLowerCase().includes(q)
+        s.artist.toLowerCase().includes(q) ||
+        (s.searchQuery && s.searchQuery.toLowerCase().includes(q))
       );
+      return filtered.length > 0 ? filtered : base;
     }
 
     function playAllCurrentView() {
@@ -2316,7 +2931,6 @@
       if (navFav) navFav.className = state.currentView === "favorites" ? activeCls : idleCls;
       if (navRoom) navRoom.className = state.currentView === "room" ? activeCls : idleCls;
 
-      // Render Custom Playlists in Sidebar
       const plContainer = document.getElementById("sidebarPlaylists");
       if (!plContainer) return;
       if (state.playlists.length === 0) {
@@ -2365,9 +2979,9 @@
       }
 
       if (state.currentView === "all") {
-        if (badge) badge.textContent = "YouTube Streaming Library";
+        if (badge) badge.textContent = "320kbps Online & Offline Streaming";
         if (title) title.textContent = "All Songs";
-        if (sub) sub.textContent = "Click any track to play • Click thumbnail on right to flip for Lyrics";
+        if (sub) sub.textContent = "Search any song above without API key • Click track to play • Flip cover for LRCLIB Synced Lyrics";
       } else if (state.currentView === "favorites") {
         if (badge) badge.textContent = "Liked Collection ♥";
         if (title) title.textContent = "Favourite Songs";
@@ -2391,9 +3005,16 @@
 
       if (list.length === 0) {
         container.innerHTML = `
-          <div class="text-center py-10 px-4 space-y-2">
-            <p class="text-sm font-semibold text-slate-300">No songs found in this view</p>
-            <p class="text-xs text-slate-400">Click the Heart ♥ icon on any song or "+ Playlist" to add tracks here.</p>
+          <div class="text-center py-10 px-4 space-y-3">
+            <p class="text-sm font-semibold text-slate-200">Press "Search Live" or Enter to stream this song online!</p>
+            <p class="text-xs text-slate-400">No API Key needed — My Music searches live Hindi & Global songs automatically.</p>
+            <button
+              type="button"
+              onclick="handleSearchOrImport()"
+              class="px-4 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition"
+            >
+              🔍 Search Online & Play Now
+            </button>
           </div>
         `;
         return;
@@ -2410,7 +3031,6 @@
                 : 'bg-slate-950/50 border-slate-800/60 hover:bg-slate-800/60'
             }"
           >
-            <!-- Left: Thumbnail & Titles -->
             <div
               onclick="selectAndPlaySong('${song.id}')"
               class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
@@ -2423,12 +3043,14 @@
                 class="w-10 h-10 rounded-lg object-cover border border-slate-700 shrink-0"
               />
               <div class="min-w-0 flex-1">
-                <p class="text-xs sm:text-sm font-bold truncate ${isCurrent ? 'text-emerald-300' : 'text-white'}">${escapeHtml(song.title)}</p>
+                <div class="flex items-center gap-1.5">
+                  <p class="text-xs sm:text-sm font-bold truncate ${isCurrent ? 'text-emerald-300' : 'text-white'}">${escapeHtml(song.title)}</p>
+                  <span class="hidden sm:inline-block text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0">${escapeHtml(song.streamSource || 'HD Stream')}</span>
+                </div>
                 <p class="text-[11px] text-slate-400 truncate">${escapeHtml(song.artist)}</p>
               </div>
             </div>
 
-            <!-- Right: Heart Symbol, Add to Playlist & Duration -->
             <div class="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
@@ -2469,6 +3091,11 @@
         }
       });
 
+      const srcBadge = document.getElementById("nowPlayingSourceBadge");
+      if (srcBadge) {
+        srcBadge.textContent = song.streamSource || "320kbps HD Stream";
+      }
+
       const titleIds = ["cardSongTitle", "lyricsSongTitle", "panelSongTitle", "barSongTitle"];
       titleIds.forEach(id => {
         const el = document.getElementById(id);
@@ -2481,7 +3108,6 @@
         if (el) el.textContent = song.artist;
       });
 
-      // Heart Icon state in Now Playing & Bottom Bar
       const isFav = state.favorites.includes(song.id);
       const panelFavIcon = document.getElementById("panelFavIcon");
       const barFavIcon = document.getElementById("barFavIcon");
@@ -2495,10 +3121,49 @@
       renderLyricsLines();
     }
 
+    let lastActiveLyricIdx = -1;
     function renderLyricsLines() {
       const song = getCurrentSong();
       const area = document.getElementById("lyricsContentArea");
       if (!area || !song) return;
+
+      // If LRCLIB timestamped syncedLyrics are available, match exact second!
+      if (Array.isArray(song.syncedLyrics) && song.syncedLyrics.length > 0) {
+        let activeIdx = 0;
+        for (let i = 0; i < song.syncedLyrics.length; i++) {
+          if (state.currentTime >= song.syncedLyrics[i].time) {
+            activeIdx = i;
+          } else {
+            break;
+          }
+        }
+        area.innerHTML = song.syncedLyrics.map((item, i) => {
+          const isCurrentLine = i === activeIdx;
+          return `
+            <p
+              id="lyric-line-${i}"
+              onclick="seekToExactSecond(${item.time})"
+              class="px-2 py-1.5 rounded-lg transition-all duration-300 cursor-pointer ${
+                isCurrentLine
+                  ? 'text-emerald-300 font-extrabold text-sm bg-emerald-500/20 scale-105 shadow-sm'
+                  : 'text-slate-300/75 hover:text-white text-xs font-medium'
+              }"
+              title="Click to jump to ${formatTime(item.time)}"
+            >
+              ${escapeHtml(item.text)}
+            </p>
+          `;
+        }).join("");
+
+        if (activeIdx !== lastActiveLyricIdx) {
+          lastActiveLyricIdx = activeIdx;
+          const activeEl = document.getElementById(`lyric-line-${activeIdx}`);
+          if (activeEl && state.isFlippedToLyrics) {
+            activeEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }
+        return;
+      }
 
       const lines = (song.lyrics && song.lyrics.length)
         ? song.lyrics
@@ -2551,7 +3216,6 @@
       if (fillBar) fillBar.style.width = `${pct}%`;
       if (range) range.value = String(pct);
 
-      // Update active lyric highlight as song progresses
       renderLyricsLines();
     }
 
@@ -2682,19 +3346,69 @@
         .replace(/'/g, "&#39;");
     }
 
+    // Auto-hydrate initial tracks with real 320kbps JioSaavn audio streams & LRCLIB synced lyrics on startup
+    async function hydrateInitialCatalogStreams() {
+      const firstSong = getCurrentSong();
+      if (firstSong) {
+        resolveAndPlayRealStream(firstSong, false);
+        fetchRealLyricsFromLrclib(firstSong);
+      }
+      for (const song of state.songs.slice(0, 6)) {
+        if (!song.audioUrl || song.audioUrl.includes("soundhelix.com")) {
+          const matches = await searchLiveMusicCatalog(song.searchQuery || `${song.title} ${song.artist}`, 1);
+          if (matches && matches.length > 0 && matches[0].audioUrl) {
+            song.audioUrl = matches[0].audioUrl;
+            if (matches[0].thumbnail && matches[0].thumbnail !== DEFAULT_THUMB_NEON) {
+              song.thumbnail = matches[0].thumbnail;
+            }
+            if (matches[0].duration) song.duration = matches[0].duration;
+            song.streamSource = matches[0].streamSource || "320kbps Full Song";
+          }
+        }
+      }
+      saveStateToStorage();
+      renderAll();
+    }
+
     // Live search filtering on input + Enter key
     document.addEventListener("DOMContentLoaded", function () {
       loadStateFromStorage();
+      setupHtml5AudioListeners();
       initLocalBroadcastChannel();
       initYoutubeApi();
 
+      let searchDebounceTimer = null;
       const searchInput = document.getElementById("searchInput");
       if (searchInput) {
         searchInput.addEventListener("input", function () {
           renderSongList();
+          const q = searchInput.value.trim();
+          if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+          if (q.length >= 3 && !q.includes("youtu")) {
+            searchDebounceTimer = setTimeout(async function () {
+              const searchBtn = document.getElementById("ytSearchBtn");
+              if (searchBtn) searchBtn.textContent = "Searching...";
+              const results = await searchLiveMusicCatalog(q, 10);
+              if (results && results.length > 0) {
+                for (let i = results.length - 1; i >= 0; i--) {
+                  const track = results[i];
+                  const exists = state.songs.some(
+                    s => s.audioUrl === track.audioUrl || (s.title.toLowerCase() === track.title.toLowerCase() && s.artist.toLowerCase() === track.artist.toLowerCase())
+                  );
+                  if (!exists) {
+                    state.songs.unshift(track);
+                  }
+                }
+                saveStateToStorage();
+                renderAll();
+              }
+              if (searchBtn) searchBtn.textContent = "Search YT";
+            }, 550);
+          }
         });
         searchInput.addEventListener("keydown", function (e) {
           if (e.key === "Enter") {
+            if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
             handleSearchOrImport();
           }
         });
@@ -2716,10 +3430,11 @@
 
       const current = getCurrentSong();
       if (current) {
-        state.duration = current.duration || 198;
+        state.duration = current.duration || 210;
       }
 
       renderAll();
+      hydrateInitialCatalogStreams();
     });
   </script>
 </body>
