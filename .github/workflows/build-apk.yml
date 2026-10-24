@@ -1,4 +1,4 @@
-name: My Music
+name: ApnaGana
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: My Music
+    name: ApnaGana
     runs-on: ubuntu-latest
 
     steps:
@@ -44,7 +44,9 @@ jobs:
       - name: Prepare Web Assets (www/index.html)
         run: |
           mkdir -p www
-          if [ -f "my_music.html" ]; then
+          if [ -f "apnagana.html" ]; then
+            cp "apnagana.html" www/index.html
+          elif [ -f "my_music.html" ]; then
             cp "my_music.html" www/index.html
           elif [ -f "index.html" ]; then
             cp "index.html" www/index.html
@@ -53,7 +55,7 @@ jobs:
             if [ -n "$FIRST_HTML" ]; then
               cp "$FIRST_HTML" www/index.html
             elif [ ! -f "www/index.html" ]; then
-              echo "Error: Please place my_music.html or index.html in the repository root!"
+              echo "Error: Please place my_music.html, apnagana.html, or index.html in the repository root!"
               exit 1
             fi
           fi
@@ -63,9 +65,9 @@ jobs:
           if [ ! -f "package.json" ]; then
             cat << 'EOF' > package.json
           {
-            "name": "my-music",
-            "version": "2.0.0",
-            "description": "My Music",
+            "name": "apnagana",
+            "version": "5.0.0",
+            "description": "ApnaGana — InnerTube YouTube Music & 320kbps Streamer",
             "private": true
           }
           EOF
@@ -75,24 +77,36 @@ jobs:
 
           cat << 'EOF' > capacitor.config.json
           {
-            "appId": "com.mymusic.player",
-            "appName": "My Music",
+            "appId": "com.apnagana.music",
+            "appName": "ApnaGana",
             "webDir": "www",
             "bundledWebRuntime": false,
             "server": {
               "androidScheme": "https",
               "cleartext": true,
               "allowNavigation": [
+                "*",
+                "*.youtube.com",
+                "music.youtube.com",
+                "*.googlevideo.com",
+                "*.ytimg.com",
+                "*.googleusercontent.com",
+                "*.googleapis.com",
+                "*.kavin.rocks",
+                "*.private.coffee",
+                "*.nadeko.net",
+                "*.nerdvpn.de",
+                "*.sumit.co",
+                "*.vercel.app",
                 "*.saavn.dev",
                 "*.jiosaavn.com",
                 "*.saavncdn.com",
+                "*.allorigins.win",
+                "*.corsproxy.io",
+                "*.codetabs.com",
                 "*.lrclib.net",
                 "*.apple.com",
                 "*.mzstatic.com",
-                "*.youtube.com",
-                "*.ytimg.com",
-                "*.googlevideo.com",
-                "*.googleapis.com",
                 "*.peerjs.com"
               ]
             },
@@ -109,7 +123,7 @@ jobs:
           fi
           npx cap sync android
 
-      - name: Set App Name to "My Music" & Configure Android Permissions
+      - name: Set App Name to "ApnaGana" & Configure Android Permissions
         run: |
           node -e '
             const fs = require("fs");
@@ -117,10 +131,10 @@ jobs:
             if (fs.existsSync(stringsPath)) {
               fs.writeFileSync(stringsPath, `<?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <string name="app_name">My Music</string>
-              <string name="title_activity_main">My Music</string>
-              <string name="package_name">com.mymusic.player</string>
-              <string name="custom_url_scheme">com.mymusic.player</string>
+              <string name="app_name">ApnaGana</string>
+              <string name="title_activity_main">ApnaGana</string>
+              <string name="package_name">com.apnagana.music</string>
+              <string name="custom_url_scheme">com.apnagana.music</string>
           </resources>\n`);
             }
 
@@ -148,24 +162,24 @@ jobs:
       - name: Grant Execute Permission to Gradlew
         run: chmod +x android/gradlew
 
-      - name: Build & Sign "My Music" APK
+      - name: Build & Sign "ApnaGana" APK
         working-directory: ./android
         run: |
           ./gradlew assembleRelease -x lint -x lintRelease || ./gradlew assembleDebug
 
           keytool -genkey -v \
-            -keystore my-music-release.keystore \
-            -alias mymusic \
+            -keystore apnagana-release.keystore \
+            -alias apnagana \
             -keyalg RSA \
             -keysize 2048 \
             -validity 10000 \
-            -storepass mymusic123 \
-            -keypass mymusic123 \
-            -dname "CN=My Music, OU=Mobile, O=MyMusic, L=Dumka, S=Jharkhand, C=IN"
+            -storepass apnagana123 \
+            -keypass apnagana123 \
+            -dname "CN=ApnaGana, OU=Mobile, O=ApnaGana, L=Dumka, S=Jharkhand, C=IN"
 
           UNSIGNED_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
           DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
-          SIGNED_APK="app/build/outputs/apk/release/My Music.apk"
+          SIGNED_APK="app/build/outputs/apk/release/ApnaGana.apk"
 
           if [ -f "$UNSIGNED_APK" ]; then
             APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name "apksigner" | sort -V | tail -n 1)
@@ -173,10 +187,10 @@ jobs:
 
             "$ZIPALIGN" -f -v 4 "$UNSIGNED_APK" "app/build/outputs/apk/release/app-release-aligned.apk"
             "$APKSIGNER" sign \
-              --ks my-music-release.keystore \
-              --ks-key-alias mymusic \
-              --ks-pass pass:mymusic123 \
-              --key-pass pass:mymusic123 \
+              --ks apnagana-release.keystore \
+              --ks-key-alias apnagana \
+              --ks-pass pass:apnagana123 \
+              --key-pass pass:apnagana123 \
               --out "$SIGNED_APK" \
               "app/build/outputs/apk/release/app-release-aligned.apk"
           elif [ -f "$DEBUG_APK" ]; then
@@ -187,17 +201,17 @@ jobs:
       - name: Prepare Output APK
         run: |
           mkdir -p apk-output
-          if [ -f "android/app/build/outputs/apk/release/My Music.apk" ]; then
-            cp "android/app/build/outputs/apk/release/My Music.apk" "apk-output/My Music.apk"
+          if [ -f "android/app/build/outputs/apk/release/ApnaGana.apk" ]; then
+            cp "android/app/build/outputs/apk/release/ApnaGana.apk" "apk-output/ApnaGana.apk"
           else
             echo "Error: APK was not generated!"
             exit 1
           fi
 
-      - name: Upload My Music APK
+      - name: Upload ApnaGana APK
         uses: actions/upload-artifact@v4
         with:
-          name: My Music
-          path: apk-output/My Music.apk
+          name: ApnaGana
+          path: apk-output/ApnaGana.apk
           if-no-files-found: error
           retention-days: 30
